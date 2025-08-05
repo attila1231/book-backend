@@ -9,10 +9,6 @@ import base64
 
 client = OpenAI(api_key=os.getenv("API_KEY"))
 app = FastAPI()
-with open("temp.jpg", "rb") as image_file:
-    encoded = base64.b64encode(image_file.read()).decode("utf-8")
-    data_url = f"data:image/jpeg;base64,{encoded}"
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://192.168.1.161:8000/analyze-book"],  # Set your app domain here
@@ -25,15 +21,16 @@ app.add_middleware(
 async def analyze_book(file: UploadFile = File(...)):
     contents = await file.read()
 
-    # Save temp file for OpenAI
+    # Save uploaded file as temp
     with open("temp.jpg", "wb") as f:
         f.write(contents)
 
     try:
-        with open("temp.jpg", "rb") as image_file:
-            file_response = client.files.create(file=image_file, purpose="vision")
-            file_id = file_response.id
+        # Encode the uploaded image to data URL
+        encoded = base64.b64encode(contents).decode("utf-8")
+        data_url = f"data:image/jpeg;base64,{encoded}"
 
+        # Create chat completion with image
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
@@ -41,7 +38,7 @@ async def analyze_book(file: UploadFile = File(...)):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": "You will be provided with an image of a book cover. Please provide in bullet points the following information about the book: title, author, genre, summary, age-group, who is it for"},
-                         {"type": "image_url", "image_url": {"url": data_url}}
+                        {"type": "image_url", "image_url": {"url": data_url}}
                     ]
                 }
             ]
