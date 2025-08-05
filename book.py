@@ -7,7 +7,7 @@ import base64
 
 
 
-client = OpenAI(api_key="API_KEY")
+client = OpenAI(api_key=os.getenv("API_KEY"))
 app = FastAPI()
 with open("temp.jpg", "rb") as image_file:
     encoded = base64.b64encode(image_file.read()).decode("utf-8")
